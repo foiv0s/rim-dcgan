@@ -92,7 +92,7 @@ class GAN(object):
                 stats.append([e, acc(y, y_pred[:y.shape[0]]), np.mean(loss_d), np.mean(loss_g)])
                 # np.save('./records/' + self._settings.name, stats)
                 print('K-means acc ' + str(stats[-1][1]), sss.max(0).mean())
-
+                self._saver.save(sess, name)
             print("%-10s %-15s %-15s %-15s" % ("Step " + str(e), "D ACC= " + "{:.4f}".format(np.mean(loss_d)),
                                                "G ACC= " + "{:.4f}".format(np.mean(loss_g)),
                                                "{:.4f}".format(time.time() - aa)))

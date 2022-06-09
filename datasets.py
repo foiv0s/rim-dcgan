@@ -3,8 +3,7 @@ import numpy as np
 import cv2
 from sys import platform
 
-win32 = 'S:\\Research\\fn_dataset\\tmp\\data\\stl10_binary\\'
-linux_path = '/vol/research/fn_dataset/tmp/data/stl10_binary/'
+stl10_path = './stl10'
 
 img_to_array, array_to_img = tf.keras.preprocessing.image.img_to_array, tf.keras.preprocessing.image.array_to_img
 
@@ -18,23 +17,21 @@ def image_resize(x, dim=(64, 64)):
 
 
 def STL10_DS(resize=48):
-    path = win32 if platform == "win32" else linux_path
-
-    x_train = np.fromfile(path + 'train_X.bin', dtype=np.uint8)
+    x_train = np.fromfile(stl10_path + 'train_X.bin', dtype=np.uint8)
     x_train = x_train.reshape((int(x_train.size / 3 / 96 / 96), 3, 96, 96)).transpose((0, 3, 2, 1))
 
-    x_unlabeled = np.fromfile(path + 'unlabeled_X.bin', dtype=np.uint8)
+    x_unlabeled = np.fromfile(stl10_path + 'unlabeled_X.bin', dtype=np.uint8)
     x_unlabeled = x_unlabeled.reshape((int(x_unlabeled.size / 3 / 96 / 96), 3, 96, 96)).transpose((0, 3, 2, 1))
 
-    x_test = np.fromfile(path + 'test_X.bin', dtype=np.uint8)
+    x_test = np.fromfile(stl10_path + 'test_X.bin', dtype=np.uint8)
     x_test = x_test.reshape((int(x_test.size / 3 / 96 / 96), 3, 96, 96)).transpose((0, 3, 2, 1))
 
     x_train = image_resize(x_train, (resize, resize))
     x_unlabeled = image_resize(x_unlabeled, (resize, resize))
     x_test = image_resize(x_test, (resize, resize))
 
-    y_train = np.fromfile(path + 'train_y.bin', dtype=np.uint8) - 1
-    y_test = np.fromfile(path + 'test_y.bin', dtype=np.uint8) - 1
+    y_train = np.fromfile(stl10_path + 'train_y.bin', dtype=np.uint8) - 1
+    y_test = np.fromfile(stl10_path + 'test_y.bin', dtype=np.uint8) - 1
 
     x_train = (np.concatenate((x_train, x_test, x_unlabeled), 0))
     y_train = np.concatenate((y_train, y_test), 0)

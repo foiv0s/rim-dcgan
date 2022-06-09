@@ -44,15 +44,15 @@ class AUX(object):
         r_adv = tf.stop_gradient(r_adv)
         r_adv /= (tf.sqrt(tf.reduce_sum(tf.pow(r_adv, 2.0), axis=[1], keep_dims=True)) + 1e-17)
         '''
-        r_adv = generate_vat(f__, heads, r_norms_, s, norm=0.3)
+        r_adv = generate_vat(f__, heads, r_norms_, s, ar=s.ar)
         # '''
 
         # adv
-        x_ = f__ + r_adv * r_norms_ * 0.15
+        x_ = f__ + r_adv * r_norms_ * s.aadv
         head_radv = aux_net(x_, s.n_hidden, s.classes, s.n_over_cluster, s.n_heads, s.n_over_heads, 0, s.std)
 
         losses = []
-        d = [1e-4] * s.n_heads + [1e-2] * s.n_over_heads
+        d = [s.d1] * s.n_heads + [s.d2] * s.n_over_heads
         for i in range(len(heads)):
             losses.append(rim(heads[i], heads_d[i], head_radv[i], d[i], mask_r))
 
@@ -99,7 +99,7 @@ class AUX(object):
 
             stat_loss = np.array(stat_loss)
             if e % 1 == 0:
-                y_pred = self.pred(sess, M, self.aux_heads)
+                y_pred = self.pred_(sess, M, self.aux_heads)
                 scores = []
                 for i in range(s.n_heads):
                     scores.append(acc(y, y_pred[i][:y.shape[0]].argmax(1)))
@@ -107,9 +107,11 @@ class AUX(object):
                     print('AuxHead {} abs acc, loss: {:.2f}%,'
                           ' {:.4f}'.format(i, scores[-1] * 100, np.mean(stat_loss[:, i + 1])))
             print("%-10s  %-15s" % ("Step " + str(e), "M ACC= " + "{:.4f}".format(np.mean(stat_loss[:, 0]))))
-        # np.save('records/rec2/tt', scores_)
+            if e % 50 == 0:
+                self._saver.save(sess, s.name + '_aux')
+        self._saver.save(sess, s.name + '_aux')
 
-    def pred(self, sess, X, layer):
+    def pred_(self, sess, X, layer):
         y_ = sess.run(layer, feed_dict={self.f_: X})
         return y_
 
@@ -156,3 +158,25 @@ class AUX(object):
                 y_pred = sess.run(l2, feed_dict={self.f_: M[-10000:], drop: 0}).argmax(-1)
                 print('AuxHead acc {:.2f}'.format((y_pred == y[-10000:].ravel()).sum() / y[-10000:].shape[0]))
             print("%-10s  %-15s" % ("Step " + str(e), "M ACC= " + "{:.4f}".format(np.mean(stat_loss))))
+
+    def load_weights(self, sess):
+        self._saver.restore(sess, self._settings.name + '_aux')
+
+    def pred__(self, sess, x, layer, b=10000):
+        tmp = [sess.run(layer, feed_dict={self.f_: x[i * b:(i + 1) * b]})
+               for i in range(x.shape[0] // b + 1) if x[i * b:(i + 1) * b].shape[0] > 0]
+        return np.concatenate(tmp, axis=0)
+
+    def pred(self, sess, X, y):
+        s = self._settings
+
+        sess.run(tf.global_variables_initializer())
+        self.gan_model.load_weights(sess)
+        self.load_weights(sess)
+        M = self.gan_model(sess, X)
+
+        y_pred = [self.pred__(sess, M, layer) for layer in self.aux_heads]
+        scores = []
+        for i in range(s.n_heads):
+            scores.append(acc(y, y_pred[i][:y.shape[0]].argmax(1)))
+            print('AuxHead {} abs acc, {:.4f}'.format(i, scores[-1] * 100))

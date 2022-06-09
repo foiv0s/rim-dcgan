@@ -18,6 +18,10 @@ class MNIST:
         self.ds = MNIST_DS()
         self.name = name.lower()
         self.std = 0.01
+        self.d1 = 0.0001
+        self.d2 = 0.01
+        self.ar = 1.
+        self.aadv = 0.2
 
 
 class CIFAR:
@@ -28,6 +32,10 @@ class CIFAR:
         self.discriminator_graph = cifar_discriminator
         self.generator_graph = cifar_generator_t
         self.std = 0.001
+        self.d1 = 0.0001
+        self.d2 = 0.01
+        self.ar = 0.3
+        self.aadv = 0.15
 
 
 class C10(CIFAR):
@@ -69,3 +77,7 @@ class STL10:
         self.n_heads = 5
         self.n_hidden = 1024
         self.std = 0.01
+        self.d1 = 0.0001
+        self.d2 = 0.01
+        self.ar = 0.3
+        self.aadv = 0.15

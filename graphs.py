@@ -353,11 +353,11 @@ def aux_net(x_, n_hidden=1024, n_classes=10, n_over_clusters=50, n_clusterheads=
     return heads
 
 
-def generate_vat(x_, hs, norms_, settings, norm=1):
+def generate_vat(x_, hs, norms_, settings, ar=1):
     x_ = tf.stop_gradient(x_)
     d = tf.random_normal(shape=tf.shape(x_))
     d /= (tf.sqrt(tf.reduce_sum(tf.pow(d, 2.0), axis=[1], keep_dims=True)))
-    aa = x_ + d * norms_ * norm
+    aa = x_ + d * norms_ * ar
     hs_ = aux_net(aa, settings.n_hidden, settings.classes, settings.n_over_cluster,
                   settings.n_heads, settings.n_over_heads, 0, settings.std)
     loss = [tf.reduce_mean(kld(hs[i], hs_[i])) for i in range(len(hs_))]
